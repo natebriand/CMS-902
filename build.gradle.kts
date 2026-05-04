@@ -1,0 +1,31 @@
+plugins {
+    id("java")
+    id("application")
+    id("org.openjfx.javafxplugin") version "0.1.0"
+}
+
+group = "com.cms902"
+version = "1.0.0"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+}
+
+repositories {
+    mavenCentral()
+}
+
+javafx {
+    version = "22"
+    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics")
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+}
+
+application {
+    mainClass = "com.cms902.CMS902Application"
+    applicationDefaultJvmArgs = listOf("-Dprism.order=sw")
+}
