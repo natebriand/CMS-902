@@ -117,8 +117,9 @@ public class SimulationEngine {
      *
      * <ul>
      *   <li>Speed is in knots (nautical miles per hour).</li>
-     *   <li>The tick interval is 2 seconds, so distance traveled per tick
-     *       is {@code speed * (2/3600)} nautical miles.</li>
+     *   <li>The tick interval is 2 seconds. Each tick advances tracks by one
+     *   minute of simulated movement, so distance traveled per tick is
+     *   {@code speed * (60/3600)} nautical miles.</li>
      *   <li>One degree of latitude ≈ 60 nautical miles, so dividing by 60
      *       converts distance to degrees.</li>
      *   <li>Heading is split into latitude and longitude components using
@@ -137,7 +138,7 @@ public class SimulationEngine {
             double speed = track.getSpeed();
             double heading = track.getHeading();
 
-            double distance = speed * (2.0 / 3600);
+            double distance = speed * (60.0 / 3600);
             double delta = distance / 60;
             double deltaLat = delta * Math.cos(Math.toRadians(heading));
             double deltaLon = (delta * Math.sin(Math.toRadians(heading))) / Math.cos(Math.toRadians(track.getLatitude()));
