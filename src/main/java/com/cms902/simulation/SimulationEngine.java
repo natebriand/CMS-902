@@ -213,4 +213,14 @@ public class SimulationEngine {
             scheduler.shutdown();
         }
     }
+
+    /**
+     * Returns the current track list as a defensive copy. Intended
+     * for testing, consumers should subscribe via the listener interface instead.
+     *
+     * @return a copy of the current tracks
+     */
+    public List<Track> getTracks() {
+        return new ArrayList<>(tracks);
+    }
 }
