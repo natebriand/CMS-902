@@ -36,3 +36,9 @@ application {
     mainClass = "com.cms902.CMS902Application"
     applicationDefaultJvmArgs = listOf("-Dprism.order=sw")
 }
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "com.cms902.HeadlessMain"
+    }
+}
