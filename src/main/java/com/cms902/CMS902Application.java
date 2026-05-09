@@ -5,6 +5,7 @@ import com.cms902.model.Scenario;
 import com.cms902.simulation.SimulationEngine;
 import com.cms902.ui.RadarDisplay;
 import com.cms902.ui.MainWindow;
+import com.cms902.persistence.TrackHistoryRepository;
 
 
 import javafx.application.Application;
@@ -23,6 +24,19 @@ public class CMS902Application extends Application {
         RadarDisplay radarDisplay = new RadarDisplay(600, 600);
 
         simulationEngine.addListener(trackManager);
+
+        String jdbcUrl = System.getenv().getOrDefault("CMS902_DB_URL", "jdbc:mariadb://localhost:3307/cms902");
+        String dbUser = System.getenv().getOrDefault("CMS902_DB_USER", "root");
+        String dbPassword = System.getenv().getOrDefault("CMS902_DB_PASSWORD", "");
+
+        if (!dbPassword.isEmpty()) {
+            TrackHistoryRepository historyRepository = new TrackHistoryRepository(jdbcUrl, dbUser, dbPassword);
+            trackManager.addListener(historyRepository);
+        } else {
+            System.out.println("Database password not set — track history persistence disabled. " +
+                    "Set CMS902_DB_PASSWORD to enable.");
+        }
+
         trackManager.addListener(tracks -> Platform.runLater(() -> radarDisplay.onTrackPictureUpdated(tracks)));
 
         simulationEngine.start();
@@ -33,8 +47,7 @@ public class CMS902Application extends Application {
         stage.setScene(scene);
         stage.show();
 
-        // Trigger the first draw so the radar background appears immediately,
-        // rather than waiting for the first 2 second tick.
+        // Trigger the first draw so the radar background appears immediately
         radarDisplay.onTrackPictureUpdated(trackManager.getTracks());
     }
 

@@ -22,9 +22,11 @@ javafx {
 }
 
 dependencies {
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.3.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testImplementation("org.mockito:mockito-core:5.11.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
+    testImplementation("com.h2database:h2:2.2.224")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
