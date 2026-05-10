@@ -18,12 +18,8 @@ import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
 
 /**
- * Top-level window layout for the CMS 902 application.
- *
- * Holds the radar in the center, a control panel on the left, and a status
- * bar at the bottom. The control panel lets the user change scenario and
- * start or stop the simulation.
- */
+ * Top-level window: radar in the center, controls on the left, status bar on the bottom.
+ * */
 public class MainWindow {
 
     private final BorderPane root;
@@ -34,10 +30,7 @@ public class MainWindow {
     private Label statusLabel;
     private boolean simulationRunning = true;
 
-    /**
-     * Builds the window layout around the given radar, track manager, and
-     * initial simulation engine.
-     */
+
     public MainWindow(RadarDisplay radarDisplay, TrackManager trackManager, SimulationEngine simulationEngine) {
         this.radarDisplay = radarDisplay;
         this.trackManager = trackManager;
@@ -46,20 +39,13 @@ public class MainWindow {
         root = new BorderPane();
         root.setBackground(new Background(new BackgroundFill(Color.web("#1a1a1a"), null, null)));
 
-        // Place each piece in its region. Order matters here: buildStatusBar() reads scenarioPicker,
-        // which is created inside buildControlPanel(), so the control panel must be built first.
+        // Order matters: buildStatusBar reads scenarioPicker, which buildControlPanel creates.
         root.setCenter(radarDisplay.getCanvas());
         root.setLeft(buildControlPanel());
         root.setBottom(buildStatusBar());
     }
 
-    /**
-     * Builds the control panel on the left side of the window.
-     * Runs once at startup. Each button gets a click handler attached that runs
-     * later, only when the user clicks.
-     */
     private VBox buildControlPanel() {
-        // VBox stacks children vertically. The 10 is the gap in pixels between each child.
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(10));
         panel.setPrefWidth(180);
@@ -75,10 +61,7 @@ public class MainWindow {
         scenarioPicker.getItems().addAll(Scenario.values());
         scenarioPicker.setValue(Scenario.PEACETIME);
 
-        // By default the dropdown would show the raw enum names ("PEACETIME").
-        // The converter tells it to show the friendly displayName ("Peacetime Patrol") instead.
-        // toString: how to display a Scenario as text.
-        // fromString: how to turn typed text back into a Scenario. Unused here, so null.
+        // Show the human-readable displayName instead of the raw enum constant.
         scenarioPicker.setConverter(new StringConverter<>() {
             @Override
             public String toString(Scenario scenario) {
@@ -90,8 +73,6 @@ public class MainWindow {
             }
         });
 
-        // Each button's setOnAction attaches a lambda. The lambda is stored
-        // on the button and runs later every time the user clicks.
         Button applyButton = new Button("Apply Scenario");
         applyButton.setOnAction(e -> {
             applyScenario();
@@ -113,21 +94,18 @@ public class MainWindow {
             updateStatus(trackManager.getTracks().size());
         });
 
-        // Add everything to the VBox in display order from top to bottom.
         panel.getChildren().addAll(heading, scenarioLabel, scenarioPicker, applyButton, startButton, stopButton);
         return panel;
     }
 
     /**
      * Stops the current simulation and replaces it with a new one based on
-     * the currently selected scenario. The new simulation is wired to the
-     * existing TrackManager and starts immediately.
+     * the currently selected scenario.
      */
     private void applyScenario() {
         Scenario chosen = scenarioPicker.getValue();
         if (chosen == null) return;
 
-        // The old simulation is discarded and its background thread is shut down by stop().
         simulationEngine.stop();
         simulationEngine = new SimulationEngine(chosen);
         simulationEngine.addListener(trackManager);
