@@ -21,7 +21,7 @@ public class RadarDisplay implements TrackManager.TrackPictureListener {
     private static final double CENTER_LONGITUDE = -35.0;
 
     // 2.5° covers the 4° x 10° operating area in both axes.
-    private static final double DEGREES_FROM_CENTER_TO_EDGE = 2.5;
+    private static final double DEGREES_FROM_CENTER_TO_EDGE = 2.0;
 
 
     public RadarDisplay(double width, double height) {

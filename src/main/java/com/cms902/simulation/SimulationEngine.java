@@ -39,7 +39,7 @@ public class SimulationEngine {
     }
 
     /**
-     * Operating area is 48–52°N, 30–40°W (sample RCN patrol area east of Newfoundland).
+     * Operating area is 48–52°N, 33–37°W (sample RCN patrol area east of Newfoundland).
      */
     private void generateTracks() {
         for (int i=0; i<random.nextInt(scenario.minTracks, scenario.maxTracks + 1); i++) {
@@ -47,7 +47,7 @@ public class SimulationEngine {
             Track.TrackType[] types = Track.TrackType.values();
             Track.TrackType randomType = types[random.nextInt(types.length)];
             double latitude = 48.0 + random.nextDouble() * 4.0;   // 48.0 – 52.0°N
-            double longitude = -40.0 + random.nextDouble() * 10.0; // -40.0 – -30.0°W
+            double longitude = -37.0 + random.nextDouble() * 4.0; // -37.0 – -33.0°W
 
             Track track = new Track(designation, randomType, latitude, longitude);
 

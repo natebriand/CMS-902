@@ -52,7 +52,7 @@ class SimulationEngineTest {
         for (Track track : engine.getTracks()) {
             assertTrue(track.getLatitude() >= 48.0 && track.getLatitude() <= 52.0,
                     "Track " + track.getDesignation() + " latitude out of range");
-            assertTrue(track.getLongitude() >= -40.0 && track.getLongitude() <= -30.0,
+            assertTrue(track.getLongitude() >= -37.0 && track.getLongitude() <= -33.0,
                     "Track " + track.getDesignation() + " longitude out of range");
         }
     }
