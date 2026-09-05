@@ -16,6 +16,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
+import javafx.scene.layout.HBox;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 
 /**
  * Top-level window: radar in the center, controls on the left, status bar on the bottom.
@@ -56,6 +60,9 @@ public class MainWindow {
         Label scenarioLabel = new Label("Scenario");
         scenarioLabel.setTextFill(Color.LIGHTGRAY);
 
+        Label legendLabel = new Label("Legend");
+        legendLabel.setTextFill(Color.LIGHTGRAY);
+
         // ComboBox is JavaFX's dropdown menu. Items are all four Scenario enum values.
         scenarioPicker = new ComboBox<>();
         scenarioPicker.getItems().addAll(Scenario.values());
@@ -94,8 +101,66 @@ public class MainWindow {
             updateStatus(trackManager.getTracks().size());
         });
 
-        panel.getChildren().addAll(heading, scenarioLabel, scenarioPicker, applyButton, startButton, stopButton);
+        panel.getChildren().addAll(heading, scenarioLabel, scenarioPicker, applyButton, startButton, stopButton, legendLabel, buildLegend());
         return panel;
+    }
+
+    private VBox buildLegend() {
+        VBox legend = new VBox(8);
+
+        legend.getChildren().addAll(
+                createLegendItem("Friendly", Color.DEEPSKYBLUE, "circle"),
+                createLegendItem("Hostile", Color.RED, "diamond"),
+                createLegendItem("Neutral", Color.LIMEGREEN, "square"),
+                createLegendItem("Suspect", Color.YELLOW, "diamond"),
+                createLegendItem("Unknown", Color.YELLOW, "outline")
+        );
+
+        return legend;
+    }
+
+    private HBox createLegendItem(String text, Color color, String symbolType) {
+        HBox item = new HBox(10);
+        item.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        javafx.scene.Node symbol;
+
+        switch (symbolType) {
+            case "circle" -> {
+                Circle circle = new Circle(6);
+                circle.setFill(color);
+                symbol = circle;
+            }
+
+            case "diamond" -> {
+                Polygon diamond = new Polygon(0.0, -7.0, 7.0, 0.0, 0.0, 7.0, -7.0, 0.0);
+                diamond.setFill(color);
+                symbol = diamond;
+            }
+
+            case "square" -> {
+                Rectangle square = new Rectangle(12, 12);
+                square.setFill(color);
+                symbol = square;
+            }
+
+            case "outline" -> {
+                Rectangle square = new Rectangle(12, 12);
+                square.setFill(Color.TRANSPARENT);
+                square.setStroke(color);
+                square.setStrokeWidth(2);
+                symbol = square;
+            }
+
+            default -> symbol = new Rectangle(12, 12, color);
+        }
+
+        Label label = new Label(text);
+        label.setTextFill(Color.LIGHTGRAY);
+
+        item.getChildren().addAll(symbol, label);
+
+        return item;
     }
 
     /**
@@ -137,7 +202,7 @@ public class MainWindow {
      */
     private void updateStatus(int trackCount) {
         String state = simulationRunning ? "RUNNING" : "STOPPED";
-        String scenario = scenarioPicker.getValue().displayName;
+        String scenario = simulationEngine.getScenario().displayName;
 
         statusLabel.setText(String.format("Scenario: %s    |    State: %s    |    Tracks: %d",
                 scenario, state, trackCount));

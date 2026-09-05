@@ -54,21 +54,19 @@ public class SimulationEngine {
             track.setSpeed(random.nextDouble(scenario.minSpeed, scenario.maxSpeed));
             track.setHeading(random.nextDouble() * 360);
 
-            // Roll friendly first, if that fails, roll hostile against a threshold
-            // picked from the scenario's hostile range, Anything else is UNKNOWN.
+            // Roll randomly between the scenarios ranges for the type of track
             Track.Classification classification;
-            double friendlyRoll = random.nextDouble();
-            if (friendlyRoll < scenario.friendlyProbability) {
+            double range = random.nextDouble();
+            if (range < scenario.friendlyRange) {
                 classification = Track.Classification.FRIENDLY;
+            } else if (range < scenario.neutralRange) {
+                classification = Track.Classification.NEUTRAL;
+            } else if (range < scenario.hostileRange) {
+                classification = Track.Classification.HOSTILE;
+            } else if (range < scenario.suspectRange) {
+                classification = Track.Classification.SUSPECT;
             } else {
-                double hostileThreshold = scenario.minHostileProbability +
-                        random.nextDouble() * (scenario.maxHostileProbability - scenario.minHostileProbability);
-                double hostileRoll = random.nextDouble();
-                if (hostileRoll < hostileThreshold) {
-                    classification = Track.Classification.HOSTILE;
-                } else {
-                    classification = Track.Classification.UNKNOWN;
-                }
+                classification = Track.Classification.UNKNOWN;
             }
 
             track.setClassification(classification);
@@ -111,8 +109,11 @@ public class SimulationEngine {
         }
     }
 
-    /** Starts the 2 second tick loop on a daemon thread so the JVM can exit when the UI closes. */
+    /** Starts the 2-second tick loop on a daemon thread so the JVM can exit when the UI closes. */
     public void start() {
+        if (scheduler != null && !scheduler.isShutdown()) { // if a timer is already running shut it down first
+            scheduler.shutdown();
+        }
         scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable);
             thread.setDaemon(true);
@@ -129,5 +130,9 @@ public class SimulationEngine {
 
     public List<Track> getTracks() {
         return new ArrayList<>(tracks);
+    }
+
+    public Scenario getScenario() {
+        return scenario;
     }
 }
