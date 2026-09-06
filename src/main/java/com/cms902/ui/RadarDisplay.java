@@ -8,6 +8,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Canvas based radar display. Redraws from scratch on every TrackManager update.
@@ -23,6 +24,11 @@ public class RadarDisplay implements TrackManager.TrackPictureListener {
     // 2.5° covers the 4° x 10° operating area in both axes.
     private static final double DEGREES_FROM_CENTER_TO_EDGE = 2.0;
 
+    // Display state controlled by MainWindow.
+    private volatile Set<String> visibleTrackIds = Set.of();
+    private volatile boolean showTrackDetails = false;
+    private volatile List<Track> currentTracks = List.of();
+
 
     public RadarDisplay(double width, double height) {
         this.canvas = new Canvas(width, height);
@@ -34,10 +40,31 @@ public class RadarDisplay implements TrackManager.TrackPictureListener {
         return canvas;
     }
 
+    /**
+     * Sets which tracks are allowed to appear on the radar.
+     */
+    public void setVisibleTrackIds(Set<String> trackIds) {
+        this.visibleTrackIds = Set.copyOf(trackIds);
+        redraw();
+    }
+
+    /**
+     * Enables or disables additional information beside each track.
+     */
+    public void setShowTrackDetails(boolean showTrackDetails) {
+        this.showTrackDetails = showTrackDetails;
+        redraw();
+    }
+
     @Override
     public void onTrackPictureUpdated(List<Track> tracks) {
+        this.currentTracks = List.copyOf(tracks);
+        redraw();
+    }
+
+    private void redraw() {
         drawBackground();
-        drawTracks(tracks);
+        drawTracks(currentTracks);
     }
 
     private void drawBackground() {
@@ -84,10 +111,14 @@ public class RadarDisplay implements TrackManager.TrackPictureListener {
     }
 
     /**
-     * Loops through all tracks drawing them using a color and shape based on its classification.
+     * Loops through the current tracks and draws only the tracks selected by the user.
      */
     private void drawTracks(List<Track> tracks) {
         for (Track track : tracks) {
+            if (!visibleTrackIds.contains(track.getDesignation())) {
+                continue;
+            }
+
             double[] pixel = trackToPixel(track);
             drawTrackSymbol(track, pixel[0], pixel[1]);
         }
@@ -100,7 +131,13 @@ public class RadarDisplay implements TrackManager.TrackPictureListener {
         double size = 10;
         Color color = colorFor(track.getClassification());
         gc.setFill(color);
-        gc.fillText(track.getDesignation(), x + size, y + size / 2);
+
+        String label = track.getDesignation();
+        if (showTrackDetails) {
+            label += " | " + track.getTrackType() + " | " + track.getClassification();
+        }
+        gc.fillText(label, x + size, y + size / 2);
+
         gc.setStroke(color);
         gc.setLineWidth(2);
 
