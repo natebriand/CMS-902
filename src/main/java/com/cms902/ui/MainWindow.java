@@ -2,14 +2,17 @@ package com.cms902.ui;
 
 import com.cms902.manager.TrackManager;
 import com.cms902.model.Scenario;
+import com.cms902.model.Track;
 import com.cms902.simulation.SimulationEngine;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -20,6 +23,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Top-level window: radar in the center, controls on the left, status bar on the bottom.
@@ -34,6 +41,12 @@ public class MainWindow {
     private Label statusLabel;
     private boolean simulationRunning = true;
 
+    // UI state for track visibility/details.
+    private final Set<String> visibleTrackIds = new HashSet<>();
+    private final Set<String> knownTrackIds = new HashSet<>();
+    private VBox trackSelectionBox;
+    private CheckBox showTrackDetailsCheckBox;
+
 
     public MainWindow(RadarDisplay radarDisplay, TrackManager trackManager, SimulationEngine simulationEngine) {
         this.radarDisplay = radarDisplay;
@@ -47,12 +60,15 @@ public class MainWindow {
         root.setCenter(radarDisplay.getCanvas());
         root.setLeft(buildControlPanel());
         root.setBottom(buildStatusBar());
+
+        // All tracks are visible when the window is first created.
+        initializeTrackSelection(trackManager.getTracks());
     }
 
     private VBox buildControlPanel() {
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(10));
-        panel.setPrefWidth(180);
+        panel.setPrefWidth(210);
 
         Label heading = new Label("Controls");
         heading.setTextFill(Color.LIGHTGRAY);
@@ -101,7 +117,36 @@ public class MainWindow {
             updateStatus(trackManager.getTracks().size());
         });
 
-        panel.getChildren().addAll(heading, scenarioLabel, scenarioPicker, applyButton, startButton, stopButton, legendLabel, buildLegend());
+        showTrackDetailsCheckBox = new CheckBox("Show Track Details");
+        showTrackDetailsCheckBox.setTextFill(Color.LIGHTGRAY);
+        showTrackDetailsCheckBox.setSelected(false);
+        showTrackDetailsCheckBox.setOnAction(e ->
+                radarDisplay.setShowTrackDetails(showTrackDetailsCheckBox.isSelected())
+        );
+
+        Label tracksLabel = new Label("Visible Tracks");
+        tracksLabel.setTextFill(Color.LIGHTGRAY);
+
+        trackSelectionBox = new VBox(5);
+        ScrollPane trackScrollPane = new ScrollPane(trackSelectionBox);
+        trackScrollPane.setFitToWidth(true);
+        trackScrollPane.setPrefHeight(180);
+        trackScrollPane.setMaxHeight(180);
+        trackScrollPane.setStyle("-fx-background: #1a1a1a; -fx-background-color: #1a1a1a;");
+
+        panel.getChildren().addAll(
+                heading,
+                scenarioLabel,
+                scenarioPicker,
+                applyButton,
+                startButton,
+                stopButton,
+                legendLabel,
+                buildLegend(),
+                showTrackDetailsCheckBox,
+                tracksLabel,
+                trackScrollPane
+        );
         return panel;
     }
 
@@ -164,6 +209,69 @@ public class MainWindow {
     }
 
     /**
+     * Creates the track visibility list. Every track starts selected.
+     */
+    private void initializeTrackSelection(List<Track> tracks) {
+        visibleTrackIds.clear();
+        knownTrackIds.clear();
+
+        for (Track track : tracks) {
+            visibleTrackIds.add(track.getDesignation());
+            knownTrackIds.add(track.getDesignation());
+        }
+
+        rebuildTrackSelection(tracks);
+        radarDisplay.setVisibleTrackIds(visibleTrackIds);
+    }
+
+    /**
+     * Keeps the selection list synchronized with the current track picture while
+     * preserving the user's selections between simulation ticks.
+     */
+    private void updateTrackSelection(List<Track> tracks) {
+        Set<String> currentTrackIds = new HashSet<>();
+        for (Track track : tracks) {
+            currentTrackIds.add(track.getDesignation());
+        }
+
+        boolean trackSetChanged = !currentTrackIds.equals(knownTrackIds);
+        if (trackSetChanged) {
+            // Remove tracks that no longer exist and select newly created tracks.
+            visibleTrackIds.retainAll(currentTrackIds);
+            for (String trackId : currentTrackIds) {
+                if (!knownTrackIds.contains(trackId)) {
+                    visibleTrackIds.add(trackId);
+                }
+            }
+
+            knownTrackIds.clear();
+            knownTrackIds.addAll(currentTrackIds);
+            rebuildTrackSelection(tracks);
+        }
+
+        radarDisplay.setVisibleTrackIds(visibleTrackIds);
+    }
+
+    private void rebuildTrackSelection(List<Track> tracks) {
+        trackSelectionBox.getChildren().clear();
+
+        for (Track track : tracks) {
+            CheckBox checkBox = new CheckBox(track.getDesignation());
+            checkBox.setTextFill(Color.LIGHTGRAY);
+            checkBox.setSelected(visibleTrackIds.contains(track.getDesignation()));
+            checkBox.setOnAction(e -> {
+                if (checkBox.isSelected()) {
+                    visibleTrackIds.add(track.getDesignation());
+                } else {
+                    visibleTrackIds.remove(track.getDesignation());
+                }
+                radarDisplay.setVisibleTrackIds(visibleTrackIds);
+            });
+            trackSelectionBox.getChildren().add(checkBox);
+        }
+    }
+
+    /**
      * Stops the current simulation and replaces it with a new one based on
      * the currently selected scenario.
      */
@@ -174,6 +282,9 @@ public class MainWindow {
         simulationEngine.stop();
         simulationEngine = new SimulationEngine(chosen);
         simulationEngine.addListener(trackManager);
+
+        // A new scenario creates a new track set, so start with every track visible.
+        initializeTrackSelection(simulationEngine.getTracks());
         simulationEngine.start();
 
         // Trigger an immediate redraw of the tracks
@@ -192,7 +303,10 @@ public class MainWindow {
         updateStatus(trackManager.getTracks().size());
 
         // Subscribe to TrackManager so the status updates on every tick.
-        trackManager.addListener(tracks -> Platform.runLater(() -> updateStatus(tracks.size())));
+        trackManager.addListener(tracks -> Platform.runLater(() -> {
+            updateStatus(tracks.size());
+            updateTrackSelection(tracks);
+        }));
 
         return statusLabel;
     }
